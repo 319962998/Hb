@@ -5,14 +5,20 @@ import com.colin.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Controller
 @RequestMapping("/admin")
@@ -42,6 +48,7 @@ public class AdminController {
     StuSessionService stuSessionService;
     @Autowired
     TeaSessionService teaSessionService;
+
     @RequestMapping("login")
     public String login(String name, String password, HttpSession session,Model model) {
 
@@ -881,4 +888,66 @@ public class AdminController {
     {
         return "login";
     }
+
+    /**
+     * 个人信息上传
+     * @return {Result}
+     */
+    @RequestMapping(value = "/upload/headImg", method = {RequestMethod.POST})
+    @ResponseBody
+    public Object headImg(@RequestParam(value="file",required=false) MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String prefix="";
+        String dateStr="";
+        System.out.println("1111111111111111111111111");
+        String originalName="";
+        String uploadDir="uploadDir";//这个文件夹是创建在:helloworld/target/helloworld/statics/uploadDir,以及helloworld/statics/uploadDir处
+        //保存上传
+        OutputStream out = null;
+        InputStream fileInput=null;
+        try{
+            if(file!=null){
+                // 文件名：头像.jpg
+                originalName = file.getOriginalFilename();
+                System.out.println(originalName);
+                //获取格式：jpg
+                prefix=originalName.substring(originalName.lastIndexOf(".")+1);
+                // 时间戳
+                SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+                dateStr = format.format(new Date());
+                // 文件全url:D:/myworkspace/IdeaProjects/helloworld/target/helloworld/statics/uploadDir/20190804140905.jpg
+                //String filepath = request.getServletContext().getRealPath("/statics/"+ uploadDir+"/" + dateStr + "." + prefix) ;
+                //D:/myworkspace/IdeaProjects/helloworld/target/helloworld/statics/uploadDir/20190804140905头像.jpg
+                String filepath = request.getServletContext().getRealPath("/statics/"+ uploadDir+"/" + dateStr + originalName) ;
+                filepath = filepath.replace("/", "\\");
+                System.out.println(filepath);
+                //保存图片
+                File files=new File(filepath);
+                if(!files.getParentFile().exists()){
+                    files.getParentFile().mkdirs();
+                }
+                file.transferTo(files);
+            }
+        }catch (Exception e){
+        }finally{
+            try {
+                if(out!=null){
+                    out.close();
+                }
+                if(fileInput!=null){
+                    fileInput.close();
+                }
+            } catch (IOException e) {
+            }
+        }
+        //前端回调js中：
+        Map<String,Object> map2=new HashMap<>();
+        Map<String,Object> map=new HashMap<>();
+        map.put("code",0);
+        map.put("msg","");
+        map.put("data",map2);
+        //map2.put("src","../../../statics/"+uploadDir +"/"+ dateStr + "." + prefix);
+        map2.put("src","../../../statics/"+uploadDir +"/"+ dateStr + originalName);
+        return map;
+    }
+
 }
